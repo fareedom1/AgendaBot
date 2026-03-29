@@ -49,3 +49,20 @@ pip install -r requirements.txt
 5. Add tests to verify key behaviors.
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
+
+## Testing PawPal+
+
+To verify that the foundational logic engine is working identically as expected, run the following command in your terminal:
+```bash
+python -m pytest
+```
+
+### What We Cover
+The testing suite explicitly runs boundary math checks against our five most critical engine loops:
+- **Foundational Data Logic:** Asserts that completing tasks and appending tasks to pet profiles works correctly.
+- **Sorting Correctness:** Asserts that chronologically unsorted String time objects (like `"14:00"` and `"08:00"`) are sorted correctly mathematically by the engine.
+- **Recurrence Logic:** Asserts that marking a recurring "daily" task as completed successfully generates a brand new cloned `Task` object properly scheduled for exactly one `timedelta` day later.
+- **Conflict Detection:** Asserts that two duplicate exact time starts will trigger the boolean collision warning flag correctly.
+
+### Confidence Level: ⭐⭐⭐⭐⭐ 5/5 Stars!
+Because all five specific logical test cases successfully and deterministically execute using Pytest, I am extremely confident that PawPal+ is reliable, robust, and mathematically sound!

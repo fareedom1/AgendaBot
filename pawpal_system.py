@@ -172,9 +172,10 @@ class Schedule:
             results = [t for t in results if t.pet.name.lower() == pet_name.lower()]
         return results
 
-    def detect_conflicts(self, task_list: List[Task]) -> None:
+    def detect_conflicts(self, task_list: List[Task]) -> bool:
         """
         Iterates over tasks and prints a lightweight warning if multiple tasks share the exact same 'time'.
+        Returns True if a conflict was found, False otherwise.
         """
         time_map = {}
         for task in task_list:
@@ -192,3 +193,4 @@ class Schedule:
         if not found_conflict:
             print("✅ No exact time conflicts found.")
         print("-----------------------")
+        return found_conflict
