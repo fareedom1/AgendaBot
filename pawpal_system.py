@@ -172,10 +172,9 @@ class Schedule:
             results = [t for t in results if t.pet.name.lower() == pet_name.lower()]
         return results
 
-    def detect_conflicts(self, task_list: List[Task]) -> bool:
+    def detect_conflicts(self, task_list: List[Task]) -> List[str]:
         """
-        Iterates over tasks and prints a lightweight warning if multiple tasks share the exact same 'time'.
-        Returns True if a conflict was found, False otherwise.
+        Iterates over tasks and returns a list of warning strings if multiple tasks share the exact same 'time'.
         """
         time_map = {}
         for task in task_list:
@@ -183,14 +182,17 @@ class Schedule:
                 time_map[task.time] = []
             time_map[task.time].append(f"'{task.name}' for {task.pet.name}")
             
-        print("\n--- Conflict Report ---")
-        found_conflict = False
+        conflicts = []
         for t_time, task_names in time_map.items():
             if len(task_names) > 1:
-                found_conflict = True
-                print(f"⚠️ WARNING: Time Conflict at {t_time}! Scheduled simultaneously: {', '.join(task_names)}")
+                conflicts.append(f"Time Collision at {t_time}! Scheduled simultaneously for: {', '.join(task_names)}")
                 
-        if not found_conflict:
+        if conflicts:
+            print("\n--- Conflict Report ---")
+            for c in conflicts:
+                print(f"⚠️ {c}")
+            print("-----------------------")
+        else:
             print("✅ No exact time conflicts found.")
-        print("-----------------------")
-        return found_conflict
+            
+        return conflicts

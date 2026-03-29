@@ -2,111 +2,164 @@ import streamlit as st
 from pawpal_system import Pet, Task, Schedule, Owner
 from datetime import date
 
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
 # Initialize Session State
 if "owner" not in st.session_state:
     st.session_state.owner = Owner("Jordan")
-    default_pet = Pet(name="Mochi", species="cat", breed="Unknown", age=2, weight=10.0)
+    default_pet = Pet(name="Mochi", species="Cat", breed="Unknown", age=2, weight=10.0)
     st.session_state.owner.add_pet(default_pet)
 
 if "pending_tasks" not in st.session_state:
     st.session_state.pending_tasks = []
 
+if "completed_tasks" not in st.session_state:
+    st.session_state.completed_tasks = []
+
 if "last_schedule" not in st.session_state:
     st.session_state.last_schedule = None
 
-st.title("🐾 PawPal+")
-
-st.markdown(
-    """
-Welcome to the PawPal+ starter app.
-
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
-
-Use this app as your interactive demo once your backend classes/functions exist.
-"""
-)
-
-with st.expander("Scenario", expanded=True):
-    st.markdown(
-        """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-for their pet(s) based on constraints like time, priority, and preferences.
-
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
-"""
-    )
-
-with st.expander("What you need to build", expanded=True):
-    st.markdown(
-        """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
-"""
-    )
-
+st.title("🐾 PawPal+ Dashboard")
+st.markdown("Your smart assistant for prioritizing and organizing your daily pet core routines!")
 st.divider()
 
-st.subheader("Your Configuration")
+# --- 1. CONFIGURATION: PETS ---
 current_owner = st.session_state.owner
-current_pet = current_owner.pets[0]
 
-owner_name = st.text_input("Owner name", value=current_owner.name)
-if owner_name != current_owner.name:
-    current_owner.name = owner_name
+col_name, _ = st.columns([1, 3])
+with col_name:
+    owner_name = st.text_input("Owner Name", value=current_owner.name)
+    if owner_name != current_owner.name:
+        current_owner.name = owner_name
 
-pet_name = st.text_input("Pet name", value=current_pet.name)
-species_options = ["dog", "cat", "other"]
-try:
-    default_index = species_options.index(current_pet.species.lower())
-except ValueError:
-    default_index = 2
-species = st.selectbox("Species", species_options, index=default_index)
+st.subheader("Your Pets")
+if current_owner.pets:
+    pet_data = [{"Name": p.name, "Species": p.species.capitalize(), "Breed": p.breed, "Age": p.age, "Weight (lbs)": p.weight} for p in current_owner.pets]
+    st.dataframe(pet_data, use_container_width=True)
 
-if pet_name != current_pet.name or species != current_pet.species:
-    current_pet.update_info(name=pet_name, species=species.lower())
-
-st.markdown("### Tasks")
-st.caption("Add a few tasks. In your final version, these should feed into your scheduler.")
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    task_title = st.text_input("Task title", value="Morning walk")
-with col2:
-    duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
-with col3:
-    priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
-
-if st.button("Add task"):
-    new_task = Task(
-        pet=current_pet, 
-        name=task_title, 
-        description="Added from UI", 
-        duration_minutes=int(duration), 
-        priority=priority.capitalize()
-    )
-    st.session_state.pending_tasks.append(new_task)
-
-if st.session_state.pending_tasks:
-    st.write("Current Pending Tasks:")
-    task_data = [{"Task": t.name, "Pet": t.pet.name, "Duration (min)": t.duration_minutes, "Priority": t.priority} for t in st.session_state.pending_tasks]
-    st.table(task_data)
-else:
-    st.info("No tasks yet. Add one above.")
+with st.expander("➕ Add a New Pet"):
+    with st.form("add_pet_form", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            new_pet_name = st.text_input("Pet Name")
+        with c2:
+            new_pet_species = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
+        with c3:
+            new_pet_breed = st.text_input("Breed (Optional)", value="Unknown")
+            
+        c4, c5, _ = st.columns(3)
+        with c4:
+            new_pet_age = st.number_input("Age (Years)", min_value=0, value=1)
+        with c5:
+            new_pet_weight = st.number_input("Weight (lbs)", min_value=0.0, value=10.0, step=1.0)
+            
+        if st.form_submit_button("Save Pet"):
+            if new_pet_name:
+                p = Pet(name=new_pet_name, species=new_pet_species, breed=new_pet_breed, age=new_pet_age, weight=new_pet_weight)
+                current_owner.add_pet(p)
+                st.success(f"{new_pet_name} added successfully!")
+                st.rerun()
 
 st.divider()
 
-st.subheader("Generate Daily Schedule")
-st.caption("Uses the Greedy Priority Algorithm to fit tasks perfectly into your schedule.")
+# --- 2. ADDING TASKS ---
+st.subheader("Add Care Task")
 
-available_minutes = st.slider("Available Free Time (Minutes)", min_value=10, max_value=300, value=60, step=10)
+with st.form("add_task_form", clear_on_submit=True):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        task_title = st.text_input("Task title", placeholder="Morning walk")
+        duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
+    with col2:
+        priority = st.selectbox("Priority", ["High", "Medium", "Low"], index=1)
+        # Time input
+        task_time_obj = st.time_input("Scheduled Time", value=None)
+    with col3:
+        frequency = st.selectbox("Frequency Tracking", ["Once", "Daily", "Weekly"], index=0)
+        # Pet Selector dynamically populated!
+        pet_names = [p.name for p in current_owner.pets]
+        selected_pet_name = st.selectbox("Assign to Pet", pet_names) if pet_names else None
 
-if st.button("⚙️ Generate Schedule"):
+    if st.form_submit_button("➕ Add Task"):
+        if not selected_pet_name:
+            st.error("You must add a pet first!")
+        elif not task_title:
+            st.error("Task title cannot be empty.")
+        elif not task_time_obj:
+            st.error("Please assign a scheduled time.")
+        else:
+            time_str = task_time_obj.strftime("%H:%M")
+            target_pet = next((p for p in current_owner.pets if p.name == selected_pet_name), None)
+            
+            new_task = Task(
+                pet=target_pet, 
+                name=task_title, 
+                description="Added from UI", 
+                duration_minutes=int(duration), 
+                priority=priority,
+                time=time_str,
+                frequency=frequency
+            )
+            st.session_state.pending_tasks.append(new_task)
+            st.success("Task added to queue!")
+            st.rerun()
+
+# Display Pending Tasks
+if st.session_state.pending_tasks:
+    st.write("##### Current Pending Tasks")
+    # Interactive physical rows so we can trigger mark_completed() logically!
+    for i, t in enumerate(st.session_state.pending_tasks):
+        c1, c2, c3, c4 = st.columns([1, 4, 3, 2])
+        with c1:
+            if st.button("✅ Done", key=f"complete_btn_{i}_{t.name}"):
+                # 1. Pop the designated chore out of the pending list
+                completed_chore = st.session_state.pending_tasks.pop(i)
+                # 2. Mathematically mark it completed and check for recurrence
+                next_task = completed_chore.mark_completed()
+                # 3. Route to the history log
+                st.session_state.completed_tasks.append(completed_chore)
+                # 4. If recurrent, push new clone back into pending queue
+                if next_task:
+                    st.session_state.pending_tasks.append(next_task)
+                    st.toast(f"Recurring clone spawned for {next_task.due_date}!", icon="🔁")
+                    
+                st.rerun()
+                
+        with c2:
+            st.write(f"**{t.name}**")
+            st.caption(f"Priority: {t.priority}")
+        with c3:
+            st.write(f"🐾 {t.pet.name}")
+            st.caption(f"{t.duration_minutes}m • [{t.frequency}]")
+        with c4:
+            st.write(f"🕒 {t.time}")
+            st.caption(f"{t.due_date}")
+else:
+    st.info("No tasks in the queue.")
+
+if st.session_state.completed_tasks:
+    with st.expander("📚 View Completed Tasks History"):
+        for t in reversed(st.session_state.completed_tasks):
+            st.write(f"- ✅ **{t.name}** for {t.pet.name} (Scheduled: {t.due_date})")
+
+st.divider()
+
+# --- 3. SCHEDULE GENERATION ---
+st.subheader("⚙️ Generate Daily Schedule")
+st.write("The greedy-algorithm mathematically organizes tasks chronologically, fitting as many high-priority items into your free time as possible.")
+
+available_minutes = st.slider("Total Free Time to Allocate (Minutes)", min_value=10, max_value=300, value=120, step=10)
+
+# Check for conflicts instantly BEFORE generation using our detection pass!
+if st.session_state.pending_tasks:
+    # We instantiate a temporary Schedule purely to access its static-like logic
+    temp_schedule = Schedule(available_minutes, date.today())
+    conflicts = temp_schedule.detect_conflicts(st.session_state.pending_tasks)
+    if conflicts:
+        for c in conflicts:
+            st.warning(f"⚠️ {c}")
+
+if st.button("🚀 Generate Optimized Schedule", type="primary"):
     if not st.session_state.pending_tasks:
         st.error("Please add some tasks first!")
     else:
@@ -123,17 +176,20 @@ if st.button("⚙️ Generate Schedule"):
         # 4. Save to Vault
         st.session_state.last_schedule = schedule
 
-# Render the Output if it exists
+# Render the Output beautifully if it exists
 if st.session_state.last_schedule:
     saved = st.session_state.last_schedule
-    st.success(f"Schedule automatically generated for {saved.schedule_date}!")
+    st.success(f"Algorithm successfully mapped a daily plan for {saved.schedule_date}!")
     
-    st.write("### ✅ Accepted Tasks")
+    st.write("### ✅ Accepted Tasks (Chronological)")
     if saved.final_schedule:
-        accepted_data = [{"Task": t.name, "Duration": f"{t.duration_minutes}m", "Priority": t.priority} for t in saved.final_schedule]
-        st.table(accepted_data)
+        # Sort chronologically right before rendering using our algorithmic feature!!
+        chronological_tasks = saved.sort_by_time(saved.final_schedule)
+        
+        accepted_data = [{"Time": t.time, "Task": t.name, "Pet": t.pet.name, "Duration": f"{t.duration_minutes}m", "Priority": t.priority} for t in chronological_tasks]
+        st.dataframe(accepted_data, use_container_width=True)
     else:
-        st.warning("No tasks fit into the schedule!")
+        st.error("No tasks fit into the schedule!")
         
     with st.expander("🔍 Show Scheduler Reasoning Log"):
         for task in saved.pending_tasks:

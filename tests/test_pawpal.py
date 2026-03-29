@@ -74,6 +74,6 @@ def test_conflict_detection():
     task3 = Task(pet=puppy, name="Lunch", description="", duration_minutes=10, priority="low", time="12:00")
     
     # Act & Assert
-    assert schedule.detect_conflicts([task1, task2]) is True, "Two tasks at 09:00 should successfully flag a collision."
-    assert schedule.detect_conflicts([task1, task3]) is False, "Tasks at 09:00 and 12:00 should NOT flag a collision."
+    assert len(schedule.detect_conflicts([task1, task2])) > 0, "Two tasks at 09:00 should successfully flag a collision."
+    assert len(schedule.detect_conflicts([task1, task3])) == 0, "Tasks at 09:00 and 12:00 should NOT flag a collision."
 

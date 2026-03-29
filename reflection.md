@@ -28,67 +28,20 @@ Schedule class
     - stores a list of pending tasks to schedule, available daily time, and the final generated schedule
     - has methods to add tasks, generate daily schedule based on constraints (time) and priority, explain its reasoning, and display the final plan
     
+### 📸 UML Diagram
 
-```mermaid
-classDiagram
-    class Owner {
-        +String name
-        +List~Pet~ pets
-        +add_pet(Pet pet)
-        +remove_pet(Pet pet)
-    }
-
-    class Pet {
-        +String name
-        +String species
-        +String breed
-        +int age
-        +float weight
-        +List~Task~ tasks
-        +update_info()
-        +add_task(Task task)
-    }
-
-    class Task {
-        +Pet pet
-        +String name
-        +String description
-        +int duration
-        +String priority
-        +String status
-        +update_task()
-        +mark_completed()
-    }
-
-    class Schedule {
-        +List~Task~ pending_tasks
-        +int available_time
-        +List~Task~ final_schedule
-        +add_task(Task task)
-        +generate_daily_schedule()
-        +get_reasoning(Task task)
-        +display_plan()
-    }
-
-    Owner "1" *-- "0..*" Pet : owns
-    Owner "1" --> "1" Schedule : runs/creates
-    Schedule "1" o-- "0..*" Task : schedules/manages
-    Pet "1" <-- "0..*" Task : is for
-```
+<a href="assets/uml_final.png" target="_blank"><img src="assets/uml_final.png" title="PawPal UML Diagram" width="" alt="PawPal UML Diagram" class="center-block" /></a>
 
 
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
-
-**Yes.** Even before full logic implementation, we made four foundational changes to prevent bottlenecks:
-1. **Priority Sorting Mapping**: We mapped string priorities like "High" to integer weights (via an internal property) so the scheduler can sort them mathematically.
-2. **Added Missing Date Concepts**: We added a `schedule_date` attribute to the `Schedule` so the app knows *what day* the schedule is for.
-3. **Clarified Time Units**: We explicitly renamed attributes to `duration_minutes` and `available_minutes` to prevent mixing up hours and minutes in calculation logic.
-4. **Added Schedule to Owner**: We added a `schedules` list to the `Owner` class so that the owner has a direct relationship to the generated plan (critical for Streamlit state).
-5. **Added Tasks to Pet**: We added a `tasks` list and `add_task()` method to the `Pet` class. This allows the system to explicitly track which tasks belong to which pet, making testing and UI rendering much easier.
+**Yes.** Our design underwent significant structural overhauls during implementation to support the Streamlit UI and advanced algorithms. We made the following major changes directly to our foundational classes:
+1. **Expanded the `Task` Class:** We actively appended `time` (String), `due_date` (Date), and `frequency` (String) directly to the `Task` constructor. This was absolutely critical to physically power the chronological table sorting and automated recurrence generation button loops in our frontend interface. 
+2. **Expanded `Schedule` Algorithms:** We injected three massive native algorithmic functions directly into the backend object (`sort_by_time()`, `filter_tasks()`, and `detect_conflicts()`). This allowed the web app to stay cleanly decoupled and rely entirely on the backend to do the heavy mathematical processing securely.
+3. **Priority Sorting Mapping:** We mapped arbitrary string priorities like "High" to strict integer weights (via an internal dataclass property) so the greedy scheduler can sort them mathematically.
+4. **Clarified Time Units:** We explicitly renamed generic `duration` attributes to `duration_minutes` to prevent mixing up mathematical tracking limits in the loops.
+5. **Added Tasks to Pet:** We added a `tasks` list and `add_task()` method to the `Pet` core. This allows the system to definitively track which chores belong to which animal, successfully powering the dynamic *"Assign to Pet"* dropdown menus on the main dashboard!
 
 ---
 
@@ -96,8 +49,8 @@ classDiagram
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+Our scheduler primarily considers **Available Time** and **Priority Weight**.
+I decided that fitting high-priority medical/feeding tasks strictly within the user's limited free time was the absolute most critical constraint system. The Greedy Algorithm specifically sorts by Highest Priority first, ensuring that critical pet care is never accidentally dropped due to a lack of time.
 
 **b. Tradeoffs**
 
@@ -113,15 +66,19 @@ This tradeoff heavily favors performance and Pythonic code readability. Calculat
 
 ## 3. AI Collaboration
 
-**a. How you used AI**
+**Reflect on AI Strategy: Specifically describe your experience with AI:**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+**1. Which features were most effective for building your scheduler?**
+The most effective features for building the scheduler were leveraging the AI's ability to quickly generate Python object boilerplate and using specific algorithmic prototyping prompts. Directing the AI with pointed logic requests (e.g., *"How do I use `datetime.timedelta` to clone tasks securely?"* or *"How do I use `sorted()` keys to map string formats?"*) was incredibly effective for rapidly building complex algorithms without getting bogged down tracking trivial syntax errors.
 
-**b. Judgment and verification**
+**2. Give one example of an AI suggestion you rejected or modified to keep your system design clean.**
+When building the schedule collision system, the AI initially designed the `detect_conflicts()` backend method to simply securely `print()` warning outputs directly to the local terminal screen. I realized immediately this architectural choice would render the collision system entirely inaccessible for a web-based GUI like Streamlit. I actively rejected that proposal, and explicitly instructed the AI to refactor the method to natively return a `List[str]` of warning messages instead. This allowed the frontend interface to cleanly successfully loop over them to display glowing `st.warning()` native pop-ups!
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+**3. How did using separate chat sessions for different phases help you stay organized?**
+Using dynamically separate chat sessions acted perfectly as conceptual "commit branches." By explicitly scoping one chat functionally for "Backend System Design", another exclusively for "Scheduling Engines", and a final session purely mapped for "Streamlit UI Integration", I completely avoided context collapse. Each session acted natively as a clean slate, ensuring the AI model wasn't aggressively confusing UI layout errors with earlier structural math bugs. 
+
+**4. Summarize what you learned about being the "lead architect" when collaborating with powerful AI tools.**
+I explicitly learned that being the "lead architect" completely means strictly owning the systemic vision and logically validating the blueprint *prior* to generating any active code loops. The backend mathematical structures implicitly dictate the frontend graphical limits. By rigidly defining the exact class properties in the `reflection.md` Markdown diagram first, and actively forcing the AI to strictly build logic targeting those exact boundaries, I maintained absolute authoritative control over the entire system's design phase securely!
 
 ---
 
@@ -141,8 +98,8 @@ We verified that adding a task to a `Pet` successfully increases that pet's inte
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+I am exceptionally confident! (5/5 Stars). The Pytest suite securely and deterministically passes 100% on all five advanced architectural modules; verifying basic appends, logic iterations, chronological string sorting, and collision detection maps explicitly!
+If I had another few weeks, the next edge cases I would heavily test are **Timezone Overlaps** (what happens if the user travels with their pet?) and **Multi-day continuous events** (e.g., tracking a 48-hour medical observation period).
 
 ---
 
@@ -150,12 +107,13 @@ We verified that adding a task to a `Pet` successfully increases that pet's inte
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I am most satisfied with the **Streamlit UI overhaul**. Replacing the minimal starter code with a highly-functional multi-pet dashboard that instantly reflects the backend algorithm sorting felt incredibly rewarding. Watching the green table automatically chronologically re-organize itself upon generation is a massive graphical win!
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+If I had another full iteration phase, I would install a physically durable database backend (like SQLite or Postgres). Currently, our `st.session_state` operates flawlessly during navigating, but if the web server restarts, the Pet profiles are cleanly wiped. Physically persistent storage is the necessary next step.
 
 **c. Key takeaway**
-
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+The biggest takeaway is that Backend Mathematical Architecture strictly dictates Frontend Design capabilities. I could not build the chronological visual Table or the Collision Warning System in Streamlit until I structurally expanded the backend `Task` class to actually hold explicit `time` and `frequency` data attributes first. System architecture is truly the blueprint for the entire application!

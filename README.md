@@ -1,68 +1,37 @@
-# PawPal+ (Module 2 Project)
+# PawPal+ Scheduling System 🐾
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+PawPal+ is a smart, interactive Streamlit dashboard designed to help busy pet owners organize, prioritize, and automatically track daily care routines for multiple pets.
 
-## Scenario
+## 📸 Demo
 
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
+<a href="assets/showcase.png" target="_blank"><img src="assets/showcase.png" title="PawPal App" width="" alt="PawPal App" class="center-block" /></a>
 
-- Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-- Consider constraints (time available, priority, owner preferences)
-- Produce a daily plan and explain why it chose that plan
+## Core Features & Algorithms
 
-Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
-
-## What you will build
-
-Your final app should:
-
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
+- **Multi-Pet Management Dashboard:** Dynamically configure and switch between multiple pets (Dogs, Cats, Birds, etc.), assigning unique tasks logically and explicitly to each individual pet.
+- **Greedy Task Allocation Engine:** At the core of the app is a mathematical "Greedy-Algorithm" that takes the user's available continuous free time duration (e.g., 120 minutes) and mathematically packs as many "High Priority" critical chores into that block as physically possible, explicitly rejecting non-essential "Low" priority tasks if the time constraints are exceeded.
+- **Interactive Checklist Progression:** Physical rows containing interactive `✅ Done` buttons dynamically trigger array state changes, popping completed chores out of the queue and mapping them into a persistent graphical historical `Session State` archive log.
 
 ## Smarter Scheduling
 
-The basic scheduler logic has been upgraded to support horizontal features that mimic real-world planning needs:
-- **Chronological Sorting:** Utilizing Python's `sorted()` logic to organize task lists chronologically (e.g. `08:00` to `14:00`).
-- **Task Search Filtering:** Ability to query and filter task sets by pet ownership or completion status.
-- **Recurring Automation:** Tasks marked as "daily" or "weekly" utilize `datetime.timedelta` to automatically clone themselves for their next scheduled future date when marked complete.
-- **Conflict Detection:** The engine detects and flags lightweight warnings if multiple events share identically scheduled starts, avoiding rigid crashes while guiding users out of double-booking errors.
-
-## Getting started
-
-### Setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### Suggested workflow
-
-1. Read the scenario carefully and identify requirements and edge cases.
-2. Draft a UML diagram (classes, attributes, methods, relationships).
-3. Convert UML into Python class stubs (no logic yet).
-4. Implement scheduling logic in small increments.
-5. Add tests to verify key behaviors.
-6. Connect your logic to the Streamlit UI in `app.py`.
-7. Refine UML so it matches what you actually built.
+The basic scheduler logic has been upgraded to support advanced algorithmic features that mimic complex real-world planning needs:
+- **Chronological Sorting:** Utilizing Python's native `sorted()` logic to automatically re-organize accepted task lists completely chronologically out-of-order (e.g., dynamically moving `18:00` below `08:00` tasks).
+- **Recurring Automation:** Tasks flagged as "Daily" or "Weekly" actively utilize mathematical `datetime.timedelta` hooks. When checking them off as fully completed, they automatically physically duplicate a perfectly identical clone of themselves securely back into the task queue for exactly tomorrow (`due_date` + 1).
+- **Conflict Detection:** The engine dynamically iterates dictionaries mapping scheduled time strings. It gracefully flags active HTML `st.warning()` alerts if multiple physical events explicitly share identically scheduled starting `HH:MM` bounds *before* the user accidentally creates a double-booking logic error.
 
 ## Testing PawPal+
 
-To verify that the foundational logic engine is working identically as expected, run the following command in your terminal:
+To verify that the foundational backend engines and architectural loops are working perfectly symmetrically, run the following framework command directly natively inside your terminal:
 ```bash
 python -m pytest
 ```
 
 ### What We Cover
-The testing suite explicitly runs boundary math checks against our five most critical engine loops:
-- **Foundational Data Logic:** Asserts that completing tasks and appending tasks to pet profiles works correctly.
-- **Sorting Correctness:** Asserts that chronologically unsorted String time objects (like `"14:00"` and `"08:00"`) are sorted correctly mathematically by the engine.
-- **Recurrence Logic:** Asserts that marking a recurring "daily" task as completed successfully generates a brand new cloned `Task` object properly scheduled for exactly one `timedelta` day later.
-- **Conflict Detection:** Asserts that two duplicate exact time starts will trigger the boolean collision warning flag correctly.
+The testing suite explicitly securely runs boundary mathematics assertions against our core algorithm engines:
+- **Foundational Data Logic:** Asserts that pushing custom tasks to Pet nodes accurately dynamically augments lists without data loss.
+- **Sorting Correctness:** Asserts that chronologically chaotic String elements (e.g. `['18:00', '08:00']`) are successfully rigorously arranged strictly procedurally back to chronological arrays.
+- **Recurrence Logic:** Asserts that forcing a recurring object flag physically accurately generates a perfect copy decoupled completely dynamically via `timedelta` increments explicitly pointing perfectly one day later.
+- **Conflict Detection:** Asserts that intentionally loading mathematically identical duplicate objects returns strict length arrays effectively tripping the engine's warning flags precisely!
 
 ### Confidence Level: ⭐⭐⭐⭐⭐ 5/5 Stars!
-Because all five specific logical test cases successfully and deterministically execute using Pytest, I am extremely confident that PawPal+ is reliable, robust, and mathematically sound!
+Because all five specific logic test cases successfully and deterministically execute using Pytest, I natively and heavily assess complete system reliability, structural mathematical robustness, and fully operational algorithms!
