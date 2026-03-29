@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-from datetime import date
+from datetime import date, timedelta
 
 @dataclass
 class Pet:
@@ -32,6 +32,9 @@ class Task:
     description: str
     duration_minutes: int
     priority: str
+    time: str = "12:00"  # Format HH:MM
+    due_date: date = field(default_factory=date.today)
+    frequency: str = "once"
     status: str = "pending"
 
     @property
@@ -46,9 +49,34 @@ class Task:
             if hasattr(self, key):
                 setattr(self, key, value)
 
-    def mark_completed(self) -> None:
-        """Mark the task as completed."""
+    def mark_completed(self) -> Optional['Task']:
+        """
+        Mark the task as completed.
+        If the task is recurring (daily or weekly), returns a new cloned Task for the future.
+        """
         self.status = "completed"
+        
+        freq = self.frequency.strip().lower()
+        days_to_add = 0
+        if freq == "daily":
+            days_to_add = 1
+        elif freq == "weekly":
+            days_to_add = 7
+            
+        if days_to_add > 0:
+            next_date = self.due_date + timedelta(days=days_to_add)
+            return Task(
+                pet=self.pet,
+                name=self.name,
+                description=self.description,
+                duration_minutes=self.duration_minutes,
+                priority=self.priority,
+                time=self.time,
+                due_date=next_date,
+                frequency=self.frequency,
+                status="pending"
+            )
+        return None
 
 
 class Owner:
@@ -125,3 +153,42 @@ class Schedule:
             total_time_used += t.duration_minutes
         print(f"Time Remaining: {self.available_minutes - total_time_used} minutes")
         print("======================\n")
+
+    def sort_by_time(self, tasks_to_sort: List[Task]) -> List[Task]:
+        """
+        Sorts the provided list of tasks chronologically by their 'time' attribute.
+        """
+        # Python automatically uses lexicographical sorting on strings, so "08:00" < "14:00" works beautifully.
+        return sorted(tasks_to_sort, key=lambda t: t.time)
+        
+    def filter_tasks(self, task_list: List[Task], status: str = None, pet_name: str = None) -> List[Task]:
+        """
+        Filters a list of tasks by status or pet name (can act as Search filter).
+        """
+        results = task_list
+        if status:
+            results = [t for t in results if t.status.lower() == status.lower()]
+        if pet_name:
+            results = [t for t in results if t.pet.name.lower() == pet_name.lower()]
+        return results
+
+    def detect_conflicts(self, task_list: List[Task]) -> None:
+        """
+        Iterates over tasks and prints a lightweight warning if multiple tasks share the exact same 'time'.
+        """
+        time_map = {}
+        for task in task_list:
+            if task.time not in time_map:
+                time_map[task.time] = []
+            time_map[task.time].append(f"'{task.name}' for {task.pet.name}")
+            
+        print("\n--- Conflict Report ---")
+        found_conflict = False
+        for t_time, task_names in time_map.items():
+            if len(task_names) > 1:
+                found_conflict = True
+                print(f"⚠️ WARNING: Time Conflict at {t_time}! Scheduled simultaneously: {', '.join(task_names)}")
+                
+        if not found_conflict:
+            print("✅ No exact time conflicts found.")
+        print("-----------------------")

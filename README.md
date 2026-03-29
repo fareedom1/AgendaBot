@@ -22,6 +22,14 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Smarter Scheduling
+
+The basic scheduler logic has been upgraded to support horizontal features that mimic real-world planning needs:
+- **Chronological Sorting:** Utilizing Python's `sorted()` logic to organize task lists chronologically (e.g. `08:00` to `14:00`).
+- **Task Search Filtering:** Ability to query and filter task sets by pet ownership or completion status.
+- **Recurring Automation:** Tasks marked as "daily" or "weekly" utilize `datetime.timedelta` to automatically clone themselves for their next scheduled future date when marked complete.
+- **Conflict Detection:** The engine detects and flags lightweight warnings if multiple events share identically scheduled starts, avoiding rigid crashes while guiding users out of double-booking errors.
+
 ## Getting started
 
 ### Setup

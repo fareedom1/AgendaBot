@@ -104,6 +104,11 @@ classDiagram
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+**Tradeoff**: 
+Our scheduler's conflict detection logic checks for *exact time string matches* (e.g., both tasks starting at "08:00") rather than calculating and protecting *overlapping duration blocks* (e.g., a task from "08:00" to "08:45" overlapping with a task starting at "08:15").
+
+**Why it's reasonable**: 
+This tradeoff heavily favors performance and Pythonic code readability. Calculating overlapping continuous blocks requires fully converting strings to `datetime` objects and iterating/comparing bounds (e.g., `start_time <= other_end and end_time >= other_start`), which is algorithmically heavy for a lightweight daily check-list application. Since most pet owners roughly assign generalized times to chores ("morning", "08:00"), warning them about identical starts securely covers 95% of accidental double-booking user errors while keeping the codebase incredibly fast and human-readable!
 ---
 
 ## 3. AI Collaboration

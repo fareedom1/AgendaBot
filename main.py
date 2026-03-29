@@ -4,40 +4,42 @@ from datetime import date
 def main():
     print("Initializing PawPal+ testing data...")
     
-    # 1. Create Owner and Pets
     owner = Owner("Fareed")
-    fido = Pet(name="Fido", species="Dog", breed="Golden Retriever", age=3, weight=30.0)
+    fido = Pet(name="Fido", species="Dog", breed="Golden", age=3, weight=30.0)
     luna = Pet(name="Luna", species="Cat", breed="Siamese", age=2, weight=10.0)
-    
     owner.add_pet(fido)
     owner.add_pet(luna)
     
-    # 2. Add Tasks
-    walk_task = Task(pet=fido, name="Morning Walk", description="Walk around the block", duration_minutes=45, priority="High")
-    feed_cat_task = Task(pet=luna, name="Feed Breakfast", description="Give wet food", duration_minutes=15, priority="High")
-    play_task = Task(pet=luna, name="Laser Pointer Time", description="Play with laser pointer", duration_minutes=30, priority="Low")
-    groom_task = Task(pet=fido, name="Brush Fur", description="Brush out shedding fur", duration_minutes=20, priority="Medium")
+    # 1. OUT OF ORDER tasks with frequency and time
+    walk_task = Task(pet=fido, name="Afternoon Walk", description="Walk", duration_minutes=45, priority="High", time="14:00", frequency="daily")
+    feed_cat_task = Task(pet=luna, name="Feed Breakfast", description="Wet food", duration_minutes=15, priority="High", time="08:00", frequency="daily")
+    meds_task = Task(pet=fido, name="Give Medication", description="Pill", duration_minutes=5, priority="High", time="08:00", frequency="once")
+    play_task = Task(pet=luna, name="Laser Pointer Time", description="Play", duration_minutes=30, priority="Low", time="18:30", frequency="weekly")
     
-    # 3. Create Schedule with limited time (e.g., 60 minutes) to test constraints
-    print("Testing constraints: We have 4 tasks total (110 minutes total), but only 60 minutes of free time available.\n")
-    schedule = Schedule(available_minutes=60, schedule_date=date.today())
-    owner.schedules.append(schedule)
+    tasks = [walk_task, feed_cat_task, meds_task, play_task]
+    schedule = Schedule(available_minutes=120, schedule_date=date.today())
     
-    schedule.add_task(walk_task)
-    schedule.add_task(feed_cat_task)
-    schedule.add_task(play_task)
-    schedule.add_task(groom_task)
-    
-    # Generate schedule
-    schedule.generate_daily_schedule()
-    
-    # 4. Print "Today's Schedule" to the terminal
-    schedule.display_plan()
-    
-    # Highlight the reasoning
-    print("--- Scheduler Reasoning Log ---")
-    for task in [walk_task, feed_cat_task, play_task, groom_task]:
-        print(f"Task '{task.name}': {schedule.get_reasoning(task)}")
+    print("\n--- Testing sort_by_time() ---")
+    sorted_tasks = schedule.sort_by_time(tasks)
+    for t in sorted_tasks:
+        print(f"[{t.time}] {t.name}")
+        
+    # 2. Testing Conflicts
+    schedule.detect_conflicts(tasks)
+
+    # 3. Testing Filtering
+    print("\n--- Testing filter_tasks() (Pet=Luna) ---")
+    luna_tasks = schedule.filter_tasks(tasks, pet_name="Luna")
+    for t in luna_tasks:
+        print(f"Found: {t.name}")
+
+    # 4. Testing Recurrence / Mark Completed
+    print("\n--- Testing Recurring Automation (mark_completed) ---")
+    print(f"Original Task: {feed_cat_task.name} ({feed_cat_task.frequency}) due on {feed_cat_task.due_date} (Status: {feed_cat_task.status})")
+    next_task = feed_cat_task.mark_completed()
+    print(f"Original Task status changed to: {feed_cat_task.status}")
+    if next_task:
+        print(f"Generated NEW Recurring Instance: '{next_task.name}' due on {next_task.due_date}!")
 
 if __name__ == "__main__":
     main()
