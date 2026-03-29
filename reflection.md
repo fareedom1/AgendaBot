@@ -17,8 +17,8 @@ Owner class
     - has methods to add or remove a pet
 
 Pet class 
-    - stores pet information like name, species, breed, age, weight
-    - has methods to add, remove, and update pet information
+    - stores pet information like name, species, breed, age, weight, and a list of their specific tasks
+    - has methods to add, remove, and update pet information, as well as `add_task()` to assign a task directly
 
 Task class
     - stores task information like name, description, duration, priority, status(pending, completed)
@@ -44,7 +44,9 @@ classDiagram
         +String breed
         +int age
         +float weight
+        +List~Task~ tasks
         +update_info()
+        +add_task(Task task)
     }
 
     class Task {
@@ -86,6 +88,7 @@ classDiagram
 2. **Added Missing Date Concepts**: We added a `schedule_date` attribute to the `Schedule` so the app knows *what day* the schedule is for.
 3. **Clarified Time Units**: We explicitly renamed attributes to `duration_minutes` and `available_minutes` to prevent mixing up hours and minutes in calculation logic.
 4. **Added Schedule to Owner**: We added a `schedules` list to the `Owner` class so that the owner has a direct relationship to the generated plan (critical for Streamlit state).
+5. **Added Tasks to Pet**: We added a `tasks` list and `add_task()` method to the `Pet` class. This allows the system to explicitly track which tasks belong to which pet, making testing and UI rendering much easier.
 
 ---
 
@@ -123,6 +126,13 @@ classDiagram
 
 - What behaviors did you test?
 - Why were these tests important?
+
+**1. Task Completion Validation**
+We verified that calling `mark_completed()` correctly flips a task's status from "pending" to "completed". 
+**2. Task Addition Validation**
+We verified that adding a task to a `Pet` successfully increases that pet's internal task count.
+
+*Why they were important:* These tests verify the foundational data methods. If checking off a task failed mathematically, the entire user interface and user experience of "completing chores" would break when connected to the Streamlit app.
 
 **b. Confidence**
 
