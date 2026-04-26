@@ -1,200 +1,150 @@
 import streamlit as st
-from pawpal_system import Pet, Task, Schedule, Owner
-from datetime import date
+from streamlit_calendar import calendar
+from calendar_system import CalendarManager
 
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
+st.set_page_config(page_title="StudyPal", page_icon="📅", layout="wide")
 
-# Initialize Session State
-if "owner" not in st.session_state:
-    st.session_state.owner = Owner("Jordan")
-    default_pet = Pet(name="Mochi", species="Cat", breed="Unknown", age=2, weight=10.0)
-    st.session_state.owner.add_pet(default_pet)
-
-if "pending_tasks" not in st.session_state:
-    st.session_state.pending_tasks = []
-
-if "completed_tasks" not in st.session_state:
-    st.session_state.completed_tasks = []
-
-if "last_schedule" not in st.session_state:
-    st.session_state.last_schedule = None
-
-st.title("🐾 PawPal+ Dashboard")
-st.markdown("Your smart assistant for prioritizing and organizing your daily pet core routines!")
+st.title("📅 StudyPal AI Planner")
+st.markdown("Your smart calendar assistant for organizing study sessions!")
 st.divider()
 
-# --- 1. CONFIGURATION: PETS ---
-current_owner = st.session_state.owner
+if "calendar_events" not in st.session_state:
+    st.session_state.calendar_events = []
 
-col_name, _ = st.columns([1, 3])
-with col_name:
-    owner_name = st.text_input("Owner Name", value=current_owner.name)
-    if owner_name != current_owner.name:
-        current_owner.name = owner_name
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-st.subheader("Your Pets")
-if current_owner.pets:
-    pet_data = [{"Name": p.name, "Species": p.species.capitalize(), "Breed": p.breed, "Age": p.age, "Weight (lbs)": p.weight} for p in current_owner.pets]
-    st.dataframe(pet_data, use_container_width=True)
-
-with st.expander("➕ Add a New Pet"):
-    with st.form("add_pet_form", clear_on_submit=True):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            new_pet_name = st.text_input("Pet Name")
-        with c2:
-            new_pet_species = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
-        with c3:
-            new_pet_breed = st.text_input("Breed (Optional)", value="Unknown")
-            
-        c4, c5, _ = st.columns(3)
-        with c4:
-            new_pet_age = st.number_input("Age (Years)", min_value=0, value=1)
-        with c5:
-            new_pet_weight = st.number_input("Weight (lbs)", min_value=0.0, value=10.0, step=1.0)
-            
-        if st.form_submit_button("Save Pet"):
-            if new_pet_name:
-                p = Pet(name=new_pet_name, species=new_pet_species, breed=new_pet_breed, age=new_pet_age, weight=new_pet_weight)
-                current_owner.add_pet(p)
-                st.success(f"{new_pet_name} added successfully!")
-                st.rerun()
-
-st.divider()
-
-# --- 2. ADDING TASKS ---
-st.subheader("Add Care Task")
-
-with st.form("add_task_form", clear_on_submit=True):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        task_title = st.text_input("Task title", placeholder="Morning walk")
-        duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
-    with col2:
-        priority = st.selectbox("Priority", ["High", "Medium", "Low"], index=1)
-        # Time input
-        task_time_obj = st.time_input("Scheduled Time", value=None)
-    with col3:
-        frequency = st.selectbox("Frequency Tracking", ["Once", "Daily", "Weekly"], index=0)
-        # Pet Selector dynamically populated!
-        pet_names = [p.name for p in current_owner.pets]
-        selected_pet_name = st.selectbox("Assign to Pet", pet_names) if pet_names else None
-
-    if st.form_submit_button("➕ Add Task"):
-        if not selected_pet_name:
-            st.error("You must add a pet first!")
-        elif not task_title:
-            st.error("Task title cannot be empty.")
-        elif not task_time_obj:
-            st.error("Please assign a scheduled time.")
-        else:
-            time_str = task_time_obj.strftime("%H:%M")
-            target_pet = next((p for p in current_owner.pets if p.name == selected_pet_name), None)
-            
-            new_task = Task(
-                pet=target_pet, 
-                name=task_title, 
-                description="Added from UI", 
-                duration_minutes=int(duration), 
-                priority=priority,
-                time=time_str,
-                frequency=frequency
-            )
-            st.session_state.pending_tasks.append(new_task)
-            st.success("Task added to queue!")
+# --- SIDEBAR: Utilities & API Key ---
+with st.sidebar:
+    st.header("⚙️ Settings & Utilities")
+    
+    st.subheader("Import Calendar")
+    
+    # 1. File Uploader
+    uploaded_file = st.file_uploader("Upload .ics file", type=["ics"])
+    if uploaded_file is not None:
+        if st.button("Import from File"):
+            file_bytes = uploaded_file.read()
+            parsed_events = CalendarManager.parse_ics(file_bytes)
+            st.session_state.calendar_events = parsed_events
+            st.success(f"Imported {len(parsed_events)} events!")
             st.rerun()
 
-# Display Pending Tasks
-if st.session_state.pending_tasks:
-    st.write("##### Current Pending Tasks")
-    # Interactive physical rows so we can trigger mark_completed() logically!
-    for i, t in enumerate(st.session_state.pending_tasks):
-        c1, c2, c3, c4 = st.columns([1, 4, 3, 2])
-        with c1:
-            if st.button("✅ Done", key=f"complete_btn_{i}_{t.name}"):
-                # 1. Pop the designated chore out of the pending list
-                completed_chore = st.session_state.pending_tasks.pop(i)
-                # 2. Mathematically mark it completed and check for recurrence
-                next_task = completed_chore.mark_completed()
-                # 3. Route to the history log
-                st.session_state.completed_tasks.append(completed_chore)
-                # 4. If recurrent, push new clone back into pending queue
-                if next_task:
-                    st.session_state.pending_tasks.append(next_task)
-                    st.toast(f"Recurring clone spawned for {next_task.due_date}!", icon="🔁")
-                    
+    # 2. URL Importer
+    ics_url = st.text_input("Or paste an .ics URL (e.g. Canvas)")
+    if ics_url:
+        if st.button("Import from URL"):
+            import urllib.request
+            try:
+                req = urllib.request.Request(
+                    ics_url, headers={"User-Agent": "Mozilla/5.0"}
+                )
+                with urllib.request.urlopen(req) as response:
+                    file_bytes = response.read()
+                parsed_events = CalendarManager.parse_ics(file_bytes)
+                st.session_state.calendar_events = parsed_events
+                st.success(f"Imported {len(parsed_events)} events from URL!")
                 st.rerun()
-                
-        with c2:
-            st.write(f"**{t.name}**")
-            st.caption(f"Priority: {t.priority}")
-        with c3:
-            st.write(f"🐾 {t.pet.name}")
-            st.caption(f"{t.duration_minutes}m • [{t.frequency}]")
-        with c4:
-            st.write(f"🕒 {t.time}")
-            st.caption(f"{t.due_date}")
-else:
-    st.info("No tasks in the queue.")
+            except Exception as e:
+                st.error(f"Failed to load URL: {e}")
 
-if st.session_state.completed_tasks:
-    with st.expander("📚 View Completed Tasks History"):
-        for t in reversed(st.session_state.completed_tasks):
-            st.write(f"- ✅ **{t.name}** for {t.pet.name} (Scheduled: {t.due_date})")
+    st.divider()
 
-st.divider()
+    if st.session_state.calendar_events:
+        st.subheader("Export Calendar")
+        exported_bytes = CalendarManager.export_ics(st.session_state.calendar_events)
+        st.download_button(
+            label="Download .ics",
+            data=exported_bytes,
+            file_name="studypal_schedule.ics",
+            mime="text/calendar",
+        )
 
-# --- 3. SCHEDULE GENERATION ---
-st.subheader("⚙️ Generate Daily Schedule")
-st.write("The greedy-algorithm mathematically organizes tasks chronologically, fitting as many high-priority items into your free time as possible.")
-
-available_minutes = st.slider("Total Free Time to Allocate (Minutes)", min_value=10, max_value=300, value=120, step=10)
-
-# Check for conflicts instantly BEFORE generation using our detection pass!
-if st.session_state.pending_tasks:
-    # We instantiate a temporary Schedule purely to access its static-like logic
-    temp_schedule = Schedule(available_minutes, date.today())
-    conflicts = temp_schedule.detect_conflicts(st.session_state.pending_tasks)
-    if conflicts:
-        for c in conflicts:
-            st.warning(f"⚠️ {c}")
-
-if st.button("🚀 Generate Optimized Schedule", type="primary"):
-    if not st.session_state.pending_tasks:
-        st.error("Please add some tasks first!")
-    else:
-        # 1. Instantiate the Schedule
-        schedule = Schedule(available_minutes=available_minutes, schedule_date=date.today())
-        
-        # 2. Add all pending tasks
-        for task in st.session_state.pending_tasks:
-            schedule.add_task(task)
-            
-        # 3. Fire the Engine
-        schedule.generate_daily_schedule()
-        
-        # 4. Save to Vault
-        st.session_state.last_schedule = schedule
-
-# Render the Output beautifully if it exists
-if st.session_state.last_schedule:
-    saved = st.session_state.last_schedule
-    st.success(f"Algorithm successfully mapped a daily plan for {saved.schedule_date}!")
+    st.divider()
+    # API Key Input moved to sidebar
+    api_key = st.text_input(
+        "🧠 Hey! I need the link to my brain please input your Gemini API Key:",
+        type="password",
+        help="Get your free key from Google AI Studio.",
+    )
+    st.caption(
+        "🔒 *Privacy Note: Your API key is 100% safe. It is never saved, logged, or sent anywhere other than directly to Google's API. It disappears the moment you close this tab.*"
+    )
     
-    st.write("### ✅ Accepted Tasks (Chronological)")
-    if saved.final_schedule:
-        # Sort chronologically right before rendering using our algorithmic feature!!
-        chronological_tasks = saved.sort_by_time(saved.final_schedule)
-        
-        accepted_data = [{"Time": t.time, "Task": t.name, "Pet": t.pet.name, "Duration": f"{t.duration_minutes}m", "Priority": t.priority} for t in chronological_tasks]
-        st.dataframe(accepted_data, use_container_width=True)
+    
+
+# --- MAIN LAYOUT: Split into Calendar (Left) and Chat (Right) ---
+col_cal, col_chat = st.columns([3, 1])
+
+with col_cal:
+    st.subheader("Your Schedule")
+    if st.session_state.calendar_events:
+        calendar_options = {
+            "headerToolbar": {
+                "left": "today prev,next",
+                "center": "title",
+                "right": "dayGridMonth,timeGridWeek,listWeek",
+            },
+            "initialView": "timeGridWeek",
+            "slotMinTime": "06:00:00",
+            "slotMaxTime": "24:00:00",
+            "height": 700,
+        }
+
+        custom_css = """
+            .fc-event-title {
+                font-weight: bold;
+            }
+        """
+
+        calendar_output = calendar(
+            events=st.session_state.calendar_events,
+            options=calendar_options,
+            custom_css=custom_css,
+        )
     else:
-        st.error("No tasks fit into the schedule!")
-        
-    with st.expander("🔍 Show Scheduler Reasoning Log"):
-        for task in saved.pending_tasks:
-            reason = saved.get_reasoning(task)
-            if "Included" in reason:
-                st.write(f"🟢 **{task.name}**: {reason}")
-            else:
-                st.write(f"🔴 **{task.name}**: {reason}")
+        st.info("Upload an `.ics` file or URL in the sidebar to see your schedule!")
+
+
+with col_chat:
+    st.subheader("🤖 Chat with StudyPal")
+    
+    # We use a container for chat messages so it scrolls independently
+    chat_container = st.container(height=625)
+    
+    with chat_container:
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+                
+    if prompt := st.chat_input("Ask StudyPal to plan your week..."):
+        if not api_key:
+            st.error("Please provide my brain link (API Key) in the sidebar first!")
+        else:
+            # 1. Add user message
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with chat_container:
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+
+                # 2. Call AI Agent
+                with st.chat_message("assistant"):
+                    with st.spinner("StudyPal is thinking..."):
+                        from ai_agent import get_gemini_response
+
+                        # Track events length to see if AI added anything
+                        initial_events_count = len(st.session_state.calendar_events)
+
+                        # Fetch response (this will auto-execute the scheduling tool if needed)
+                        response_text = get_gemini_response(
+                            prompt, api_key, st.session_state.calendar_events
+                        )
+
+                        st.markdown(response_text)
+                        st.session_state.messages.append(
+                            {"role": "assistant", "content": response_text}
+                        )
+
+                        # If the AI scheduled an event, refresh the page to update the visual calendar
+                        if len(st.session_state.calendar_events) > initial_events_count:
+                            st.rerun()
