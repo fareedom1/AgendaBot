@@ -3,26 +3,42 @@ import uuid
 from datetime import datetime
 from dateutil import parser as date_parser
 
-# 1. Setup Logging for the AI Tools (Rubric Requirement)
+# 1. Setup Logging for the AI Tools
 logging.basicConfig(
     filename='ai_agent.log', 
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+def _to_local_naive(dt_str: str) -> datetime:
+    """Helper to parse a datetime string and convert it to a local, naive datetime."""
+    dt = date_parser.parse(dt_str)
+    if dt.tzinfo is not None:
+        # Convert to system local time
+        dt = dt.astimezone()
+        # Make it naive
+        dt = dt.replace(tzinfo=None)
+    return dt
+
 def check_conflict(start_dt: datetime, end_dt: datetime, existing_events: list) -> bool:
     """
     Conflict Evaluator: Checks if a given time slot overlaps with any existing events.
-    Returns True if conflict exists, False otherwise.
+    Handles timezone-aware vs timezone-naive comparisons by forcing local naive time.
     """
+    # Ensure inputs are local naive
+    if start_dt.tzinfo is not None:
+        start_dt = start_dt.astimezone().replace(tzinfo=None)
+    if end_dt.tzinfo is not None:
+        end_dt = end_dt.astimezone().replace(tzinfo=None)
+        
     for ev in existing_events:
         ev_start = ev.get('start')
         ev_end = ev.get('end')
         if not ev_start or not ev_end:
             continue
             
-        existing_start = date_parser.parse(ev_start)
-        existing_end = date_parser.parse(ev_end)
+        existing_start = _to_local_naive(ev_start)
+        existing_end = _to_local_naive(ev_end)
         
         # Overlap condition: (StartA < EndB) and (EndA > StartB)
         if start_dt < existing_end and end_dt > existing_start:
@@ -39,6 +55,9 @@ def add_event_tool(title: str, start_iso: str, end_iso: str, description: str, e
     
     start_dt = date_parser.parse(start_iso)
     end_dt = date_parser.parse(end_iso)
+    
+    # We don't convert start_iso and end_iso because the calendar needs the exact string the LLM gave us
+    # Assuming LLM outputs naive local ISO strings like '2026-04-29T09:00:00'
     
     if start_dt >= end_dt:
         error_msg = "End time must be after start time."
@@ -67,14 +86,18 @@ def add_event_tool(title: str, start_iso: str, end_iso: str, description: str, e
 def semantic_rag_filter(prompt: str, all_events: list) -> dict:
     """
     Advanced RAG Filter: Analyzes the prompt to extract target events 
-    and compresses all other events into a simple busy-time map.
+    and compresses all other events into a simple busy-time map in LOCAL time.
     """
     prompt_lower = prompt.lower()
     
     # Simple keyword extraction (can be expanded)
-    keywords = ["test", "quiz", "exam", "assignment", "homework", "project", "presentation"]
+    keywords = ["test", "quiz", "exam", "assignment", "homework", "project", "presentation", "discussion"]
     active_keywords = [kw for kw in keywords if kw in prompt_lower]
     
+    # If the user says "all my assignments", let's force the keywords to trigger if they match any event.
+    if "all" in prompt_lower and ("assignment" in prompt_lower or "due" in prompt_lower):
+        active_keywords = keywords
+        
     target_events = []
     busy_map = []
     
@@ -85,10 +108,12 @@ def semantic_rag_filter(prompt: str, all_events: list) -> dict:
         if is_target:
             target_events.append(ev)
         else:
-            # Compress into a busy map string
+            # Compress into a busy map string using Local Naive Time!
             if ev.get('start') and ev.get('end'):
-                s = date_parser.parse(ev['start']).strftime("%a %b %d %I:%M%p")
-                e = date_parser.parse(ev['end']).strftime("%I:%M%p")
+                s_dt = _to_local_naive(ev['start'])
+                e_dt = _to_local_naive(ev['end'])
+                s = s_dt.strftime("%a %b %d %I:%M%p")
+                e = e_dt.strftime("%I:%M%p")
                 busy_map.append(f"Busy: {s} to {e}")
                 
     return {
