@@ -82,10 +82,12 @@ To run this project reproducibly on any local machine:
 ---
 
 ## Testing Summary
-We implemented automated unit tests via `test_ai_tools.py` and `test_calendar.py` to test the `.ics` parser, the semantic filter, and the conflict evaluator. 
-- **What Worked**: The Python `check_conflict` guardrail worked flawlessly, correctly identifying partial and exact overlaps without using any LLM tokens. 
-- **What Didn't**: Initially, the AI struggled with time zones, attempting to schedule events using UTC 'Z' strings which caused visual offsets in the Streamlit calendar. 
-- **What I Learned**: I learned to explicitly instruct the system prompt to use "Local Naive Time" and built a Python helper `_to_local_naive` to strip timezones, completely fixing the reliability issue.
+We implemented a targeted API script (`test_system.py`) to simulate a full multi-turn Agent loop (conflict -> reflection -> retry) in a single, credit-efficient execution, alongside rigorous interactive testing in the Streamlit UI.
+- **What Worked**: The Python `check_conflict` guardrail worked flawlessly, correctly identifying overlaps without wasting LLM tokens. The `<reflection>` hook also consistently forced the AI to seamlessly correct its own scheduling mistakes when a conflict was detected.
+- **What Didn't**: 
+  - **Temporal Amnesia & Timezones**: Initially, the AI scheduled events at random dates or offset times because it didn't know the current date and struggled with UTC 'Z' strings. I fixed this by automatically injecting the system's live date into the prompt and building a `_to_local_naive` Python helper.
+  - **Rate Limits**: During interactive testing, the agentic loop frequently triggered 503 Quota errors because a single prompt generates multiple rapid API calls. This forced me to implement the `litellm` multi-provider architecture.
+- **What I Learned**: The AI is completely blind to personal events by default! To save massive amounts of tokens and prevent hallucinations, the RAG filter compresses non-academic events into blank "Busy Times". I learned I had to build a dynamic keyword matcher so the AI only "sees" the full context of personal events (like a "date") if the user explicitly mentions them in the chat.
 
 ---
 
