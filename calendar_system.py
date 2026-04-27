@@ -42,7 +42,7 @@ class CalendarManager:
         Converts a list of JSON-like event dictionaries back into an ICS file (bytes).
         """
         cal = Calendar()
-        cal.add('prodid', '-//StudyPal AI Calendar//EN')
+        cal.add('prodid', '-//AgendaBot AI Calendar//EN')
         cal.add('version', '2.0')
 
         for ev in json_events:

@@ -45,7 +45,7 @@ def get_ai_response(provider_model: str, user_prompt: str, api_key: str, events_
     current_time_str = datetime.now().strftime("%A, %B %d, %Y - %I:%M %p")
     
     system_instruction = f"""
-    You are 'StudyPal', an AI Calendar Assistant. 
+    You are 'AgendaBot', an AI Calendar Assistant. 
     Your job is to help the user plan their schedule. 
     
     CURRENT SYSTEM TIME: 

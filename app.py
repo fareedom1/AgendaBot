@@ -79,9 +79,9 @@ def show_add_event_dialog(start_str, end_str):
             st.session_state.calendar_events.append(new_event)
             st.rerun()
 
-st.set_page_config(page_title="StudyPal", page_icon="📅", layout="wide")
+st.set_page_config(page_title="AgendaBot", page_icon="📅", layout="wide")
 
-st.title("📅 StudyPal AI Planner")
+st.title("📅 AgendaBot AI Planner")
 st.markdown("Your smart calendar assistant for organizing study sessions!")
 st.divider()
 
@@ -133,7 +133,7 @@ with st.sidebar:
         st.download_button(
             label="Download .ics",
             data=exported_bytes,
-            file_name="studypal_schedule.ics",
+            file_name="AgendaBot_schedule.ics",
             mime="text/calendar",
         )
 
@@ -247,7 +247,7 @@ with col_cal:
 
 
 with col_chat:
-    st.subheader("🤖 Chat with StudyPal")
+    st.subheader("🤖 Chat with AgendaBot")
     
     # We use a container for chat messages so it scrolls independently
     chat_container = st.container(height=625)
@@ -257,7 +257,7 @@ with col_chat:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
                 
-    if prompt := st.chat_input("Ask StudyPal to plan your week..."):
+    if prompt := st.chat_input("Ask AgendaBot to plan your week..."):
         if not api_key:
             st.error("Please provide my brain link (API Key) in the sidebar first!")
         else:
@@ -269,7 +269,7 @@ with col_chat:
 
                 # 2. Call AI Agent
                 with st.chat_message("assistant"):
-                    with st.spinner("StudyPal is thinking..."):
+                    with st.spinner("AgendaBot is thinking..."):
                         from ai_agent import get_ai_response
                         
                         provider_model = "gemini/gemini-2.5-flash"
