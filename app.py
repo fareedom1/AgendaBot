@@ -138,14 +138,30 @@ with st.sidebar:
         )
 
     st.divider()
-    # API Key Input moved to sidebar
+    
+    provider = st.selectbox(
+        "🧠 Choose your AI Brain:",
+        ["Google Gemini (gemini-2.5-flash)", "OpenAI (gpt-4o-mini)", "Groq (llama3-70b-8192)"],
+        index=0
+    )
+    
+    if "Gemini" in provider:
+        key_label = "Input your Gemini API Key:"
+        help_text = "Get your free key from Google AI Studio."
+    elif "OpenAI" in provider:
+        key_label = "Input your OpenAI API Key:"
+        help_text = "Get your key from platform.openai.com."
+    else:
+        key_label = "Input your Groq API Key:"
+        help_text = "Get your free key from console.groq.com."
+
     api_key = st.text_input(
-        "🧠 Hey! I need the link to my brain please input your Gemini API Key:",
+        key_label,
         type="password",
-        help="Get your free key from Google AI Studio.",
+        help=help_text,
     )
     st.caption(
-        "🔒 *Privacy Note: Your API key is 100% safe. It is never saved, logged, or sent anywhere other than directly to Google's API. It disappears the moment you close this tab.*"
+        "🔒 *Privacy Note: Your API key is 100% safe. It is never saved, logged, or sent anywhere other than directly to the API. It disappears the moment you close this tab.*"
     )
     
     
@@ -254,14 +270,20 @@ with col_chat:
                 # 2. Call AI Agent
                 with st.chat_message("assistant"):
                     with st.spinner("StudyPal is thinking..."):
-                        from ai_agent import get_gemini_response
+                        from ai_agent import get_ai_response
+                        
+                        provider_model = "gemini/gemini-2.5-flash"
+                        if "OpenAI" in provider:
+                            provider_model = "gpt-4o-mini"
+                        elif "Groq" in provider:
+                            provider_model = "groq/llama3-70b-8192"
 
                         # Track events length to see if AI added anything
                         initial_events_count = len(st.session_state.calendar_events)
 
                         # Fetch response (this will auto-execute the scheduling tool if needed)
-                        response_text = get_gemini_response(
-                            prompt, api_key, st.session_state.calendar_events
+                        response_text = get_ai_response(
+                            provider_model, prompt, api_key, st.session_state.calendar_events
                         )
 
                         st.markdown(response_text)

@@ -61,7 +61,7 @@ def run_tier3_targeted_api_tests(events):
         print("Skipping API tests to save credits. Run `export GEMINI_API_KEY='your_key'` to enable.")
         return
 
-    from ai_agent import get_gemini_response
+    from ai_agent import get_ai_response
     
     # We will test ONE highly complex prompt to get the most out of our API call
     test_prompt = "Find my first assignment in my schedule and schedule a 1-hour study session exactly during it to test if your conflict guardrail blocks you, then schedule it 2 hours before the assignment instead."
@@ -73,7 +73,7 @@ def run_tier3_targeted_api_tests(events):
     test_events_state = list(events)
     initial_count = len(test_events_state)
     
-    response = get_gemini_response(test_prompt, api_key, test_events_state)
+    response = get_ai_response("gemini/gemini-2.5-flash", test_prompt, api_key, test_events_state)
     
     print("\n[Agent Final Response]")
     print(response)
