@@ -1,6 +1,83 @@
 import streamlit as st
 from streamlit_calendar import calendar
 from calendar_system import CalendarManager
+from dateutil import parser
+
+@st.dialog("Event Details")
+def show_event_details(event):
+    desc = event.get("extendedProps", {}).get("description", "")
+    
+    with st.form(key=f"edit_form_{event.get('id', 'unknown')}"):
+        new_title = st.text_input("Title", value=event.get('title', ''))
+        
+        try:
+            start_time = parser.parse(event.get("start")).strftime("%B %d, %Y at %I:%M %p")
+            st.write(f"**Start:** {start_time}")
+        except Exception:
+            st.write(f"**Start:** {event.get('start', 'N/A')}")
+            
+        try:
+            if event.get("end"):
+                end_time = parser.parse(event.get("end")).strftime("%B %d, %Y at %I:%M %p")
+                st.write(f"**End:** {end_time}")
+        except Exception:
+            if event.get('end'):
+                st.write(f"**End:** {event.get('end')}")
+                
+        new_desc = st.text_area("Description", value=desc)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("Save Changes")
+        with col2:
+            delete = st.form_submit_button("Delete Event", type="primary")
+            
+        if submit:
+            for i, ev in enumerate(st.session_state.calendar_events):
+                if ev["id"] == event["id"]:
+                    st.session_state.calendar_events[i]["title"] = new_title
+                    st.session_state.calendar_events[i]["description"] = new_desc
+                    break
+            st.rerun()
+            
+        if delete:
+            st.session_state.calendar_events = [ev for ev in st.session_state.calendar_events if ev["id"] != event["id"]]
+            st.rerun()
+
+@st.dialog("Add New Event")
+def show_add_event_dialog(start_str, end_str):
+    with st.form(key="add_event_form"):
+        title = st.text_input("Event Title")
+        
+        try:
+            start_time = parser.parse(start_str).strftime("%B %d, %Y at %I:%M %p")
+            st.write(f"**Start:** {start_time}")
+        except Exception:
+            st.write(f"**Start:** {start_str}")
+            
+        try:
+            if end_str:
+                end_time = parser.parse(end_str).strftime("%B %d, %Y at %I:%M %p")
+                st.write(f"**End:** {end_time}")
+        except Exception:
+            if end_str:
+                st.write(f"**End:** {end_str}")
+                
+        description = st.text_area("Description")
+        
+        submit = st.form_submit_button("Create Event")
+        
+        if submit:
+            import uuid
+            new_event = {
+                "id": str(uuid.uuid4()),
+                "title": title if title else "Untitled Event",
+                "start": start_str,
+                "end": end_str,
+                "description": description
+            }
+            st.session_state.calendar_events.append(new_event)
+            st.rerun()
 
 st.set_page_config(page_title="StudyPal", page_icon="📅", layout="wide")
 
@@ -89,11 +166,30 @@ with col_cal:
             "slotMinTime": "06:00:00",
             "slotMaxTime": "24:00:00",
             "height": 700,
+            "nowIndicator": True,
+            "navLinks": True,
+            "weekNumbers": True,
+            "editable": True,
+            "selectable": True,
+            "selectMirror": True,
         }
 
         custom_css = """
+            .fc-event {
+                cursor: pointer;
+                border-radius: 4px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                transition: transform 0.1s ease;
+            }
+            .fc-event:hover {
+                transform: scale(1.02);
+            }
             .fc-event-title {
-                font-weight: bold;
+                font-weight: 600;
+                padding: 2px 4px;
+            }
+            .fc-event-time {
+                padding: 0 4px;
             }
         """
 
@@ -102,6 +198,34 @@ with col_cal:
             options=calendar_options,
             custom_css=custom_css,
         )
+
+        if calendar_output:
+            if calendar_output.get("callback") == "eventClick":
+                current_click_str = str(calendar_output.get("eventClick", {}))
+                if st.session_state.get("last_handled_click") != current_click_str:
+                    st.session_state["last_handled_click"] = current_click_str
+                    event = calendar_output["eventClick"]["event"]
+                    show_event_details(event)
+                    
+            elif calendar_output.get("callback") == "select":
+                current_select_str = str(calendar_output.get("select", {}))
+                if st.session_state.get("last_handled_select") != current_select_str:
+                    st.session_state["last_handled_select"] = current_select_str
+                    select_data = calendar_output["select"]
+                    show_add_event_dialog(select_data["start"], select_data["end"])
+                    
+            elif calendar_output.get("callback") == "eventChange":
+                current_change_str = str(calendar_output.get("eventChange", {}))
+                if st.session_state.get("last_handled_change") != current_change_str:
+                    st.session_state["last_handled_change"] = current_change_str
+                    changed_event = calendar_output["eventChange"]["event"]
+                    for i, ev in enumerate(st.session_state.calendar_events):
+                        if ev["id"] == changed_event["id"]:
+                            st.session_state.calendar_events[i]["start"] = changed_event["start"]
+                            if changed_event.get("end"):
+                                st.session_state.calendar_events[i]["end"] = changed_event["end"]
+                            break
+                    st.rerun()
     else:
         st.info("Upload an `.ics` file or URL in the sidebar to see your schedule!")
 
