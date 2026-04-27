@@ -13,7 +13,7 @@ The system is built on a **ReAct (Reason + Act)** Agentic Loop using Streamlit a
 
 ![Data Flow](/assets/dataflow.png)
 
-1. **Semantic RAG Retriever**: When you ask the AI to plan a study session, the retriever parses your `.ics` JSON calendar. It extracts relevant events (e.g., matching "tests") while compressing everything else into a lightweight local time "Busy Time Map".
+1. **Dynamic Semantic RAG Retriever**: When you ask the AI to plan a study session, the retriever parses your `.ics` JSON calendar. It extracts relevant academic events (e.g., "tests") AND dynamically matches any custom personal events (like a "date" or "gym") if you explicitly mention them in your chat. Everything else is compressed into a lightweight local time "Busy Time Map" to save tokens and ensure privacy.
 2. **The Agent Loop**: Using `litellm`, the agent is forced to output a `<plan>` block explaining its reasoning.
 3. **Guardrails & Execution**: The agent calls the `schedule_study_session` tool. This tool routes through our `check_conflict` Python Evaluator. If the AI attempts to schedule a session over an existing class, the Python backend throws an error, forcing the AI into a `<reflection>` block where it apologizes and tries a different time block.
 4. **Human Verification**: The AI visually updates the Streamlit calendar grid, allowing the human user to click, edit, or delete the scheduled events before clicking "Export" to download the final `.ics`.
@@ -23,9 +23,7 @@ The system is built on a **ReAct (Reason + Act)** Agentic Loop using Streamlit a
 ## Demo Walkthrough
 *Please watch the video below for a full end-to-end demonstration of the application, including the AI analyzing inputs, reacting to conflicts, and successfully scheduling events on the visual calendar.*
 
-[**[Link to Loom Video Demo Here]**](#)
-
-*(Alternatively, place GIF/screenshots of 2-3 examples running inside the `/assets` folder and embed them here).*
+![GIF Showcase](/assets/showcase.gif)
 
 ---
 
@@ -77,8 +75,8 @@ To run this project reproducibly on any local machine:
 ---
 
 ## Design Decisions
-- **Why LiteLLM?** I chose `litellm` because it allows the user to hot-swap between Gemini, OpenAI, and Groq instantly without rewriting the API logic.
-- **Why RAG Filtering?** Passing an entire semester's `.ics` calendar to the LLM would consume massive amounts of tokens and cause hallucinations. The trade-off was writing complex Python logic (`semantic_rag_filter`) to compress unrelated events into simple string maps (e.g., "Busy 10am-12pm") while keeping full details only for target keywords.
+- **Why LiteLLM & Multi-Provider Support?** Agentic AI loops consume API rate limits very quickly (Google's free tier has a strict 15 Requests Per Minute limit). A single chat message can silently generate 5+ background requests as the AI "thinks" and "reflects", easily triggering 503 errors. I implemented `litellm` so users can bypass these strict limits by hot-swapping to **Groq**, which provides an enormous free tier (30+ RPM) and lightning-fast responses for seamless Agentic loops.
+- **Why RAG Filtering?** Passing an entire semester's `.ics` calendar to the LLM would consume massive amounts of tokens and cause hallucinations. The trade-off was writing complex Python logic (`semantic_rag_filter`) to compress unrelated events into simple string maps (e.g., "Busy 10am-12pm"). To ensure users can still schedule around personal tasks, the filter was upgraded to be **dynamic**—if a user types "schedule before my date", the Python logic dynamically unhides the "date" event from the busy map and feeds it to the AI.
 - **Why Python Guardrails?** AI is inherently unpredictable. Instead of trusting the AI to understand time overlaps, I built a deterministic Python function (`check_conflict`) that acts as a hard wall. This guarantees reliability.
 
 ---
