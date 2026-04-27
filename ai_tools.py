@@ -105,6 +105,13 @@ def semantic_rag_filter(prompt: str, all_events: list) -> dict:
         title = ev.get('title', '').lower()
         is_target = any(kw in title for kw in active_keywords)
         
+        # Dynamic matching: If the user specifically mentions a word from the event title (e.g., "date")
+        # that is longer than 3 characters, treat it as a target event instead of just busy time.
+        if not is_target:
+            title_words = [w.strip() for w in title.split() if len(w.strip()) >= 3]
+            if any(w in prompt_lower for w in title_words):
+                is_target = True
+        
         if is_target:
             target_events.append(ev)
         else:

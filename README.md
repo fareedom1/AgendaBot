@@ -10,7 +10,8 @@ My original project was **PawPal+**, a smart interactive Streamlit dashboard des
 
 ## Architecture Overview
 The system is built on a **ReAct (Reason + Act)** Agentic Loop using Streamlit and LiteLLM.
-![Data Flow](image.png)
+
+![Data Flow](/assets/dataflow.png)
 
 1. **Semantic RAG Retriever**: When you ask the AI to plan a study session, the retriever parses your `.ics` JSON calendar. It extracts relevant events (e.g., matching "tests") while compressing everything else into a lightweight local time "Busy Time Map".
 2. **The Agent Loop**: Using `litellm`, the agent is forced to output a `<plan>` block explaining its reasoning.
