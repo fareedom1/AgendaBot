@@ -133,10 +133,19 @@ def get_ai_response(provider_model: str, user_prompt: str, api_key: str, events_
                         "content": feedback
                     })
         else:
-            # Phase 3: Evaluation & Final Response
             final_response_text = message.content or ""
-            break
             
+            # Fix for open-source models (like Groq Llama 3) that output a plan but fail to attach the tool call
+            if "<plan>" in final_response_text and "Confidence Score:" not in final_response_text:
+                logging.info("Agent generated a plan but no tool calls. Nudging it to execute.")
+                messages.append({
+                    "role": "user",
+                    "content": "You wrote a plan but did not actually call the `schedule_study_session` tool. Please call the tool now to execute your plan. If you are completely finished scheduling, output your final response including the [Confidence Score: X.XX]."
+                })
+                continue
+                
+            # Phase 3: Evaluation & Final Response
+            break
     if not final_response_text:
         final_response_text = "Agent reached maximum execution turns without finishing."
         
