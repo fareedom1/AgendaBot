@@ -1,9 +1,11 @@
 # AgendaBot: AI-Assisted Calendar Planning App 📅
 
+https://agendabot.streamlit.app
+
 ## Original Project Context (Modules 1-3)
 My original project was **PawPal+**, a smart interactive Streamlit dashboard designed to help busy pet owners organize and track daily care routines. It featured a multi-pet management system and used a greedy task allocation algorithm to mathematically pack high-priority pet chores into a user's free time constraints. 
 
-## Title & Summary: What It Does and Why It Matters
+## What It Does and Why It Matters
 **AgendaBot** is an evolution of that concept into an Agentic AI system. Instead of manually mapping chores, AgendaBot allows students to import their actual Canvas `.ics` calendar schedules and chat with an AI Agent. The AI analyzes their free time, filters their upcoming assignments/tests using an intelligent Semantic RAG (Retrieval-Augmented Generation) system, and autonomously schedules study sessions directly onto their interactive calendar. This matters because it relieves the cognitive load of planning and prevents students from accidentally double-booking themselves during critical study periods.
 
 ---
@@ -28,6 +30,10 @@ The system is built on a **ReAct (Reason + Act)** Agentic Loop using Streamlit a
 ---
 
 ## Setup Instructions
+
+The project is deployed via Streamlit and you can access it via the following link: 
+https://agendabot.streamlit.app
+
 To run this project reproducibly on any local machine:
 
 1. **Clone the repository and enter the directory**:
